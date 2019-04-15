@@ -2,6 +2,7 @@ package v1
 
 import (
 	"blog/models"
+	"blog/pkg/app"
 	"blog/pkg/e"
 	"blog/pkg/logging"
 	"blog/pkg/setting"
@@ -53,30 +54,26 @@ func GetArticles(c *gin.Context) {
 }
 
 func GetArticle(c *gin.Context) {
+	appG := app.Gin{c}
 	id := com.StrTo(c.Param("id")).MustInt()
 
 	valid := validation.Validation{}
 	valid.Min(id, 1, "id").Message("ID必须大于0")
 
-	code := e.INVALID_PARAMS
-	var data interface{}
-	if !valid.HasErrors() {
-		if models.ExistArticleById(id) {
-			code = e.SUCCESS
-			data = models.GetArticle(id)
-		} else {
-			code = e.ERROR_NOT_EXIST_ARICLE
-		}
-	} else {
+	if valid.HasErrors() {
 		for _, err := range valid.Errors {
 			logging.Info(err)
 		}
+		appG.Response(http.StatusOK, e.INVALID_PARAMS, nil)
+		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"code":    code,
-		"message": e.GetMsg(code),
-		"data":    data,
-	})
+	if models.ExistArticleById(id) {
+		data := models.GetArticle(id)
+		appG.Response(http.StatusOK, e.SUCCESS, data)
+	} else {
+		appG.Response(http.StatusOK, e.ERROR_NOT_EXIST_ARICLE, nil)
+	}
+
 }
 
 func AddArticle(c *gin.Context) {

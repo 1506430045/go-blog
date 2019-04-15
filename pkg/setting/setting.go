@@ -11,7 +11,7 @@ type App struct {
 	PageSize        int
 	RuntimeRootPath string
 
-	ImagePrefixUrl string
+	PrefixUrl string
 	ImageSavePath  string
 	ImageMaxSize   int
 	ImageAllowExt  []string
@@ -20,6 +20,8 @@ type App struct {
 	LogSaveName string
 	LogFileExt  string
 	TimeFormat  string
+
+	ExportSavePath string
 }
 
 var AppSetting = &App{}
@@ -43,6 +45,16 @@ type Database struct {
 }
 
 var DatabaseSetting = &Database{}
+
+type Redis struct {
+	Host        string
+	Password    string
+	MaxIdle     int
+	MaxActive   int
+	IdleTimeout time.Duration
+}
+
+var RedisSetting = &Redis{}
 
 func Setup() {
 	Cfg, err := ini.Load("conf/app.ini")
@@ -68,4 +80,10 @@ func Setup() {
 	if err != nil {
 		log.Fatalf("Cfg.MapTo DatabaseSetting err: %v", err)
 	}
+
+	err = Cfg.Section("redis").MapTo(RedisSetting)
+	if err != nil {
+		log.Fatalf("Cfg.MapTo RedisSetting err: %v", err)
+	}
+	RedisSetting.IdleTimeout = RedisSetting.IdleTimeout * time.Second
 }
